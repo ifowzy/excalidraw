@@ -28,6 +28,7 @@ import { mutateElement } from "./mutateElement";
 import {
   newArrowElement,
   newElement,
+  newLinearElement,
   newStickyNoteElement,
 } from "./newElement";
 import { aabbForElement } from "./bounds";
@@ -37,6 +38,7 @@ import {
   isElbowArrow,
   isFrameElement,
   isFlowchartNodeElement,
+  isLineElement,
 } from "./typeChecks";
 import {
   type NonDeleted,
@@ -760,4 +762,204 @@ export const isNodeInFlowchart = (
   }
 
   return false;
+};
+
+export const createConnectorBetweenElements = (
+  startElement: NonDeleted<ExcalidrawBindableElement>,
+  endElement: NonDeleted<ExcalidrawBindableElement>,
+  type: "arrow" | "line",
+  appState: AppState,
+  scene: Scene,
+): NonDeleted<ExcalidrawElement> => {
+  const startCenterX = startElement.x + startElement.width / 2;
+  const startCenterY = startElement.y + startElement.height / 2;
+  const endCenterX = endElement.x + endElement.width / 2;
+  const endCenterY = endElement.y + endElement.height / 2;
+
+  const dx = endCenterX - startCenterX;
+  const dy = endCenterY - startCenterY;
+
+  let direction: LinkDirection;
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    direction = dx >= 0 ? "right" : "left";
+  } else {
+    direction = dy >= 0 ? "down" : "up";
+  }
+
+  const PADDING = 6;
+  let startX: number;
+  let startY: number;
+
+  switch (direction) {
+    case "up": {
+      startX = startCenterX;
+      startY = startElement.y - PADDING;
+      break;
+    }
+    case "down": {
+      startX = startCenterX;
+      startY = startElement.y + startElement.height + PADDING;
+      break;
+    }
+    case "right": {
+      startX = startElement.x + startElement.width + PADDING;
+      startY = startCenterY;
+      break;
+    }
+    case "left": {
+      startX = startElement.x - PADDING;
+      startY = startCenterY;
+      break;
+    }
+  }
+
+  let endX: number;
+  let endY: number;
+
+  switch (direction) {
+    case "up": {
+      endX = endCenterX - startX;
+      endY = endElement.y + endElement.height - startY + PADDING;
+      break;
+    }
+    case "down": {
+      endX = endCenterX - startX;
+      endY = endElement.y - startY - PADDING;
+      break;
+    }
+    case "right": {
+      endX = endElement.x - startX - PADDING;
+      endY = endCenterY - startY;
+      break;
+    }
+    case "left": {
+      endX = endElement.x + endElement.width - startX + PADDING;
+      endY = endCenterY - startY;
+      break;
+    }
+  }
+
+  const connectorProps = {
+    x: startX,
+    y: startY,
+    strokeColor: appState.currentItemStrokeColor || startElement.strokeColor,
+    strokeStyle: appState.currentItemStrokeStyle || startElement.strokeStyle,
+    strokeWidth: appState.currentItemStrokeWidth || startElement.strokeWidth,
+    opacity: appState.currentItemOpacity ?? startElement.opacity,
+    roughness: appState.currentItemRoughness ?? startElement.roughness,
+    points: [pointFrom(0, 0), pointFrom(endX, endY)],
+  };
+
+  const elementsMap = scene.getNonDeletedElementsMap();
+
+  if (type === "arrow") {
+    const bindingArrow = newArrowElement({
+      ...connectorProps,
+      type: "arrow",
+      startArrowhead: null,
+      endArrowhead: appState.currentItemEndArrowhead || "arrow",
+      elbowed: true,
+      fixedSegments: [],
+    });
+
+    bindBindingElement(
+      bindingArrow,
+      startElement,
+      "orbit",
+      "start",
+      scene,
+    );
+    bindBindingElement(bindingArrow, endElement, "orbit", "end", scene);
+
+    LinearElementEditor.movePoints(
+      bindingArrow,
+      scene,
+      new Map([
+        [
+          1,
+          {
+            point: bindingArrow.points[1],
+          },
+        ],
+      ]),
+    );
+
+    const update = updateElbowArrowPoints(
+      bindingArrow,
+      toBrandedType<NonDeletedSceneElementsMap>(
+        new Map([
+          ...elementsMap.entries(),
+          [startElement.id, startElement],
+          [endElement.id, endElement],
+          [bindingArrow.id, bindingArrow],
+        ] as [string, Ordered<NonDeletedExcalidrawElement>][]),
+      ),
+      { points: bindingArrow.points },
+    );
+
+    return {
+      ...bindingArrow,
+      ...update,
+      isDeleted: bindingArrow.isDeleted,
+    };
+  }
+
+  // Linear line connector: compute elbow route points for flexible PCB/hose-like path
+  const dummyArrow = newArrowElement({
+    ...connectorProps,
+    type: "arrow",
+    startArrowhead: null,
+    endArrowhead: null,
+    elbowed: true,
+    fixedSegments: [],
+  });
+
+  bindBindingElement(
+    dummyArrow,
+    startElement,
+    "orbit",
+    "start",
+    scene,
+  );
+  bindBindingElement(dummyArrow, endElement, "orbit", "end", scene);
+
+  LinearElementEditor.movePoints(
+    dummyArrow,
+    scene,
+    new Map([
+      [
+        1,
+        {
+          point: dummyArrow.points[1],
+        },
+      ],
+    ]),
+  );
+
+  const update = updateElbowArrowPoints(
+    dummyArrow,
+    toBrandedType<NonDeletedSceneElementsMap>(
+      new Map([
+        ...elementsMap.entries(),
+        [startElement.id, startElement],
+        [endElement.id, endElement],
+        [dummyArrow.id, dummyArrow],
+      ] as [string, Ordered<NonDeletedExcalidrawElement>][]),
+    ),
+    { points: dummyArrow.points },
+  );
+
+  const lineElement = newLinearElement({
+    ...connectorProps,
+    type: "line",
+    points: update.points || dummyArrow.points,
+  });
+
+  return {
+    ...lineElement,
+    x: update.x !== undefined ? update.x : lineElement.x,
+    y: update.y !== undefined ? update.y : lineElement.y,
+    points: update.points || lineElement.points,
+    isDeleted: lineElement.isDeleted,
+  };
 };

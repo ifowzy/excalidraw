@@ -15,6 +15,9 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Mount API routes
 app.use("/api", apiRouter);
 
+// Serve static assets (favicons, etc.)
+app.use(express.static(path.resolve(__dirname, "excalidraw-app/public")));
+
 async function startServer() {
   if (process.env.NODE_ENV === "production") {
     const distPath = path.resolve(__dirname, "dist");
