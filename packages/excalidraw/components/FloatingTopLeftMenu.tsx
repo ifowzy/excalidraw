@@ -8,7 +8,6 @@ import { ColorPicker } from "./ColorPicker/ColorPicker";
 import {
   LoadIcon,
   save,
-  boltIcon,
   searchIcon,
   SunIcon,
   MoonIcon,
@@ -77,11 +76,6 @@ export const FloatingTopLeftMenu: React.FC = () => {
     setAppState({ openDialog: { name: "jsonExport" } });
   };
 
-  const handleCommandPalette = () => {
-    trackEvent("command_palette", "open", "menu");
-    setAppState({ openDialog: { name: "commandPalette" } });
-  };
-
   const handleSearch = () => {
     actionManager.executeAction(actionToggleSearchMenu);
   };
@@ -121,14 +115,6 @@ export const FloatingTopLeftMenu: React.FC = () => {
           aria-label={t("labels.share")}
           data-testid="floating-share-button"
           onClick={handleShare}
-        />
-        <IconButton
-          type="button"
-          icon={boltIcon}
-          title={t("commandPalette.title")}
-          aria-label={t("commandPalette.title")}
-          data-testid="floating-command-palette-button"
-          onClick={handleCommandPalette}
         />
         <IconButton
           type="button"
