@@ -18,6 +18,7 @@ const Footer = ({
   renderWelcomeScreen,
   defaultUIEnabled,
   zoomUIEnabled,
+  children,
 }: {
   appState: UIAppState;
   actionManager: ActionManager;
@@ -25,6 +26,7 @@ const Footer = ({
   renderWelcomeScreen: boolean;
   defaultUIEnabled: boolean;
   zoomUIEnabled: boolean;
+  children?: React.ReactNode;
 }) => {
   const { FooterCenterTunnel, WelcomeScreenHelpHintTunnel } = useTunnels();
   const app = useApp();
@@ -63,7 +65,18 @@ const Footer = ({
           </Stack.Col>
         </div>
       )}
-      <FooterCenterTunnel.Out />
+      <div
+        className={clsx(
+          "layer-ui__wrapper__footer-center zen-mode-transition",
+          {
+            "layer-ui__wrapper__footer-center--transition-bottom":
+              appState.zenModeEnabled,
+          },
+        )}
+      >
+        {children}
+        <FooterCenterTunnel.Out />
+      </div>
       {(defaultUIEnabled || renderWelcomeScreen) && (
         <div
           className={clsx(

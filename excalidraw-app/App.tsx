@@ -100,8 +100,9 @@ import Collab, {
   userToFollowAtom,
 } from "./collab/Collab";
 import { AppFooter } from "./components/AppFooter";
-import { AppMainMenu } from "./components/AppMainMenu";
-import { AppWelcomeScreen } from "./components/AppWelcomeScreen";
+import { Navigation } from "./components/Navigation";
+import { GlobalFooter } from "./components/GlobalFooter";
+import { GrayscaleProvider } from "./context/GrayscaleContext";
 import {
   ExportToExcalidrawPlus,
   exportToExcalidrawPlus,
@@ -109,6 +110,7 @@ import {
 import { TopErrorBoundary } from "./components/TopErrorBoundary";
 
 import {
+  decodeSceneFromHash,
   exportToBackend,
   getCollaborationLinkData,
   importFromBackend,
@@ -228,6 +230,9 @@ const initializeScene = async (opts: {
   const jsonBackendMatch = window.location.hash.match(
     /^#json=([a-zA-Z0-9_-]+),([a-zA-Z0-9_-]+)$/,
   );
+  const clientSceneMatch = window.location.hash.match(
+    /^#(?:scene|data)=([a-zA-Z0-9_-]+)$/,
+  );
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
 
   const localDataState = importFromLocalStorage();
@@ -248,7 +253,7 @@ const initializeScene = async (opts: {
   };
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
-  const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
+  const isExternalScene = !!(id || jsonBackendMatch || clientSceneMatch || roomLinkData);
   if (isExternalScene) {
     if (
       // don't prompt if scene is empty
@@ -258,7 +263,24 @@ const initializeScene = async (opts: {
       // otherwise, prompt whether user wants to override current scene
       (await openConfirmModal(shareableLinkConfirmDialog))
     ) {
-      if (jsonBackendMatch) {
+      if (clientSceneMatch) {
+        const imported = decodeSceneFromHash(window.location.hash);
+        if (imported) {
+          scene = {
+            elements: bumpElementVersions(
+              restoreElements(imported.elements, null, {
+                repairBindings: true,
+                deleteInvisibleElements: true,
+              }),
+              localDataState?.elements,
+            ),
+            appState: restoreAppState(
+              imported.appState,
+              localDataState?.appState,
+            ),
+          };
+        }
+      } else if (jsonBackendMatch) {
         const imported = await importFromBackend(
           jsonBackendMatch[1],
           jsonBackendMatch[2],
@@ -376,6 +398,7 @@ const ExcalidrawWrapper = () => {
   const excalidrawAPI = useExcalidrawAPI();
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [isFooterOpen, setIsFooterOpen] = useState(false);
   const isCollabDisabled = isRunningInIframe();
 
   const { editorTheme, appTheme, setAppTheme } = useHandleAppTheme();
@@ -939,13 +962,17 @@ const ExcalidrawWrapper = () => {
   };
 
   return (
-    <div
-      style={{ height: "100%" }}
-      className={clsx("excalidraw-app", {
-        "is-collaborating": isCollaborating,
-      })}
-    >
-      <Excalidraw
+    <div className="fowzy-app-container">
+      <Navigation
+        onToggleFooter={() => setIsFooterOpen((prev) => !prev)}
+        isFooterOpen={isFooterOpen}
+      />
+      <div
+        className={clsx("excalidraw-app", "fowzy-canvas-wrapper", {
+          "is-collaborating": isCollaborating,
+        })}
+      >
+        <Excalidraw
         viewportStatusFrame={viewportStatusFrame}
         userToFollow={userToFollow}
         onChange={onChange}
@@ -992,30 +1019,7 @@ const ExcalidrawWrapper = () => {
         autoFocus={true}
         theme={editorTheme}
         onThemeChange={setAppTheme}
-        renderTopRightUI={(isMobile) => {
-          if (isMobile || !collabAPI || isCollabDisabled) {
-            return null;
-          }
-
-          return (
-            <div className="excalidraw-ui-top-right">
-              {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
-                <ExcalidrawPlusPromoBanner
-                  isSignedIn={isExcalidrawPlusSignedUser}
-                />
-              )}
-
-              {collabError.message && <CollabError collabError={collabError} />}
-              <LiveCollaborationTrigger
-                isCollaborating={isCollaborating}
-                onSelect={() =>
-                  setShareDialogState({ isOpen: true, type: "share" })
-                }
-                editorInterface={editorInterface}
-              />
-            </div>
-          );
-        }}
+        renderTopRightUI={() => null}
         onLinkOpen={(element, event) => {
           if (element.link && isElementLink(element.link)) {
             event.preventDefault();
@@ -1027,17 +1031,6 @@ const ExcalidrawWrapper = () => {
           }
         }}
       >
-        <AppMainMenu
-          onCollabDialogOpen={onCollabDialogOpen}
-          isCollaborating={isCollaborating}
-          isCollabEnabled={!isCollabDisabled}
-          theme={appTheme}
-          refresh={() => forceRefresh((prev) => !prev)}
-        />
-        <AppWelcomeScreen
-          onCollabDialogOpen={onCollabDialogOpen}
-          isCollabEnabled={!isCollabDisabled}
-        />
         <OverwriteConfirmDialog>
           <OverwriteConfirmDialog.Actions.ExportToImage />
           <OverwriteConfirmDialog.Actions.SaveToDisk />
@@ -1297,6 +1290,25 @@ const ExcalidrawWrapper = () => {
           />
         )}
       </Excalidraw>
+      </div>
+
+      {/* Global Footer Drawer */}
+      {isFooterOpen && (
+        <div
+          className="fowzy-footer-backdrop"
+          onClick={() => setIsFooterOpen(false)}
+        >
+          <div
+            className="fowzy-footer-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GlobalFooter
+              onClose={() => setIsFooterOpen(false)}
+              isDrawer={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1312,7 +1324,9 @@ const ExcalidrawApp = () => {
     <TopErrorBoundary>
       <Provider store={appJotaiStore}>
         <ExcalidrawAPIProvider>
-          <ExcalidrawWrapper />
+          <GrayscaleProvider>
+            <ExcalidrawWrapper />
+          </GrayscaleProvider>
         </ExcalidrawAPIProvider>
       </Provider>
     </TopErrorBoundary>

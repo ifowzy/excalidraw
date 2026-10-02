@@ -7250,7 +7250,8 @@ class App extends React.Component<AppProps, AppState> {
     // never selects anything)
     if (
       this.state.activeTool.type !== this.state.preferredSelectionTool.type &&
-      this.state.activeTool.type !== "autoshape"
+      this.state.activeTool.type !== "autoshape" &&
+      this.state.activeTool.type !== "stickynote"
     ) {
       return;
     }
@@ -12178,27 +12179,11 @@ class App extends React.Component<AppProps, AppState> {
         this.store.scheduleCapture();
         this.scene.triggerUpdate();
 
-        if (activeTool.locked) {
-          this.setState((prevState) => ({
-            newElement: null,
-            selectedElementIds: makeNextSelectedElementIds({}, prevState),
-          }));
-          this.cursor.applyForTool();
-          return;
-        }
-
-        this.cursor.reset();
-        this.setState({
+        this.setState((prevState) => ({
           newElement: null,
-          activeTool: updateActiveTool(this.state, {
-            type: this.state.preferredSelectionTool.type,
-          }),
-        });
-        this.startTextEditing({
-          sceneX: newElement.x + newElement.width / 2,
-          sceneY: newElement.y + newElement.height / 2,
-          container: newElement,
-        });
+          selectedElementIds: makeNextSelectedElementIds({}, prevState),
+        }));
+        this.cursor.applyForTool();
         return;
       }
 

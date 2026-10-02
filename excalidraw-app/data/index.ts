@@ -1,7 +1,9 @@
 import {
   compressData,
   decompressData,
+  toByteString,
 } from "@excalidraw/excalidraw/data/encode";
+import { deflate, inflate } from "pako";
 import {
   decryptData,
   generateEncryptionKey,
@@ -241,6 +243,54 @@ export const importFromBackend = async (
   }
 };
 
+export const encodeSceneToHash = (
+  elements: readonly ExcalidrawElement[],
+  appState: Partial<AppState>,
+  files: BinaryFiles,
+): string => {
+  const jsonStr = serializeAsJSON(elements, appState, files, "local");
+  const deflated = deflate(jsonStr);
+  const binaryString = toByteString(deflated);
+  const base64 = window.btoa(binaryString);
+  const base64url = base64
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return `#scene=${base64url}`;
+};
+
+export const decodeSceneFromHash = (
+  hashString: string,
+): ImportedDataState | null => {
+  try {
+    const raw = hashString.startsWith("#") ? hashString.slice(1) : hashString;
+    const match = raw.match(/^(?:scene|data)=([a-zA-Z0-9_-]+)$/);
+    if (!match) {
+      return null;
+    }
+    const base64url = match[1];
+    const base64 = base64url
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), "=");
+    const binaryString = window.atob(base64);
+    const buffer = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      buffer[i] = binaryString.charCodeAt(i);
+    }
+    const inflated = inflate(buffer, { to: "string" });
+    const data: ImportedDataState = JSON.parse(inflated);
+    return {
+      elements: data.elements || null,
+      appState: data.appState || null,
+      files: data.files || null,
+    };
+  } catch (err) {
+    console.error("Failed to decode scene from client-side hash:", err);
+    return null;
+  }
+};
+
 type ExportToBackendResult =
   | { url: null; errorMessage: string }
   | { url: string; errorMessage: null };
@@ -250,58 +300,12 @@ export const exportToBackend = async (
   appState: Partial<AppState>,
   files: BinaryFiles,
 ): Promise<ExportToBackendResult> => {
-  const encryptionKey = await generateEncryptionKey("string");
-
-  const payload = await compressData(
-    new TextEncoder().encode(
-      serializeAsJSON(elements, appState, files, "database"),
-    ),
-    { encryptionKey },
-  );
-
   try {
-    const filesMap = new Map<FileId, BinaryFileData>();
-    for (const element of elements) {
-      if (isInitializedImageElement(element) && files[element.fileId]) {
-        filesMap.set(element.fileId, files[element.fileId]);
-      }
-    }
-
-    const filesToUpload = await encodeFilesForUpload({
-      files: filesMap,
-      encryptionKey,
-      maxBytes: FILE_UPLOAD_MAX_BYTES,
-    });
-
-    const response = await fetch(BACKEND_V2_POST, {
-      method: "POST",
-      body: payload.buffer,
-    });
-    const json = await response.json();
-    if (json.id) {
-      const url = new URL(window.location.href);
-      // We need to store the key (and less importantly the id) as hash instead
-      // of queryParam in order to never send it to the server
-      url.hash = `json=${json.id},${encryptionKey}`;
-      const urlString = url.toString();
-
-      await saveFilesToFirebase({
-        prefix: `/files/shareLinks/${json.id}`,
-        files: filesToUpload,
-      });
-
-      return { url: urlString, errorMessage: null };
-    } else if (json.error_class === "RequestTooLargeError") {
-      return {
-        url: null,
-        errorMessage: t("alerts.couldNotCreateShareableLinkTooBig"),
-      };
-    }
-
-    return { url: null, errorMessage: t("alerts.couldNotCreateShareableLink") };
+    const hash = encodeSceneToHash(elements, appState, files);
+    const url = `${window.location.origin}${window.location.pathname}${hash}`;
+    return { url, errorMessage: null };
   } catch (error: any) {
     console.error(error);
-
     return { url: null, errorMessage: t("alerts.couldNotCreateShareableLink") };
   }
 };

@@ -1,0 +1,54 @@
+.floating-top-left-island {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: var(--island-bg-color, #ffffff);
+  box-shadow: 4px 4px 0px 0px #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  padding: 0.35rem 0.5rem;
+  pointer-events: var(--ui-pointerEvents);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  .ToolIcon_type_button,
+  .ToolIcon_type_icon {
+    width: var(--default-button-size);
+    height: var(--default-button-size);
+    border-radius: 0px !important;
+    border: 1.5px solid transparent;
+    transition: all 0.1s ease;
+
+    &:hover {
+      background-color: #f3f3f5;
+      border-color: #000000;
+      transform: translate(-1px, -1px);
+      box-shadow: 2px 2px 0px 0px #000000;
+    }
+
+    &:active {
+      transform: translate(0px, 0px);
+      box-shadow: 1px 1px 0px 0px #000000;
+    }
+  }
+}
+
+.theme--dark {
+  .floating-top-left-island {
+    box-shadow: 4px 4px 0px 0px #3f3f46 !important;
+    border: 2px solid #3f3f46 !important;
+
+    .ToolIcon_type_button:hover,
+    .ToolIcon_type_icon:hover {
+      background-color: #27272a;
+      border-color: #71717a;
+      box-shadow: 2px 2px 0px 0px #71717a;
+    }
+  }
+}
+
+.floating-bg-picker-content {
+  animation: scale-in 0.15s ease-out;
+  border-radius: 0px !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 4px 4px 0px 0px #000000 !important;
+}

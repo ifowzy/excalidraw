@@ -386,34 +386,31 @@ body.excalidraw-cursor-resize * {
   }
 
   .App-menu_top {
-    grid-template-columns: 1fr 2fr 1fr;
-    grid-gap: 1rem;
+    display: flex;
+    justify-content: space-between;
     align-items: flex-start;
     cursor: default;
     pointer-events: none !important;
+    width: 100%;
 
     & > * {
       pointer-events: var(--ui-pointerEvents);
     }
-
-    @media (min-width: 1536px) {
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-gap: 3rem;
-    }
   }
 
   .App-menu_top > .App-menu_top__left {
-    grid-column: 1;
-    justify-self: start;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    pointer-events: none;
 
-    // App-menu_top__left is a single-column grid, so its track width is
+    // App-menu_top__left is a single-column container, so its track width is
     // driven by the widest row — including the host-provided
     // renderTopLeftUI content, which can be arbitrarily wide. Its
     // (stretched) grid-item wrappers must stay pointer-events:none so that
     // slack isn't a dead zone over the canvas; only the actual
     // (content-sized, non-stretched) interactive pieces opt back in.
     // Specificity (not source order) is why this beats `.App-menu_top > *`.
-    pointer-events: none;
 
     .selected-shape-actions-container,
     .ToolIcon__penMode {
@@ -434,10 +431,6 @@ body.excalidraw-cursor-resize * {
     }
   }
 
-  .App-menu_top > .shapes-section {
-    grid-column: 2;
-  }
-
   .selected-shape-actions-container {
     width: fit-content;
 
@@ -447,8 +440,10 @@ body.excalidraw-cursor-resize * {
   }
 
   .App-menu_top > .layer-ui__wrapper__top-right {
-    grid-column: 3;
-    justify-self: end;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    margin-left: auto;
   }
 
   .App-menu_bottom {
@@ -456,11 +451,14 @@ body.excalidraw-cursor-resize * {
     bottom: 1rem;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: flex-end;
     cursor: default;
     pointer-events: none !important;
     box-sizing: border-box;
     padding: 0 1rem;
+    width: 100%;
+    left: 0;
+    right: 0;
 
     &--transition-left {
       section {
