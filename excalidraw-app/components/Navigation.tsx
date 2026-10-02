@@ -5,11 +5,13 @@ import { useGrayscale } from "../context/GrayscaleContext";
 interface NavigationProps {
   onToggleFooter?: () => void;
   isFooterOpen?: boolean;
+  children?: React.ReactNode;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
   onToggleFooter,
   isFooterOpen,
+  children,
 }) => {
   const { isGrayscale, toggleGrayscale } = useGrayscale();
 
@@ -19,15 +21,16 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* Brand Logo / Home Anchor */}
         <div className="fowzy-navbar__brand-container">
           <a
-            href="https://fowzy.site"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/"
             className="fowzy-navbar__brand"
           >
             <h1 className="fowzy-navbar__logo">FOWZY 🎯</h1>
           </a>
           <span className="fowzy-navbar__badge">CANVAS</span>
         </div>
+
+        {/* Embedded Cloud Controls Slot */}
+        {children && <div className="fowzy-navbar__center">{children}</div>}
 
         {/* Action Controls & Navigation Links */}
         <div className="fowzy-navbar__actions">

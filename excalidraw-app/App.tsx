@@ -116,6 +116,12 @@ import {
   importFromBackend,
   isCollaborationLink,
 } from "./data";
+import {
+  CanvasVersionSummary,
+  getSlugFromPathname,
+  fetchCanvasFromNeon,
+} from "./data/neonStorage";
+import { CloudVersionControl } from "./components/CloudVersionControl";
 
 import { updateStaleImageStatuses } from "./data/FileManager";
 import { FileStatusStore } from "./data/fileStatusStore";
@@ -220,7 +226,7 @@ const initializeScene = async (opts: {
   collabAPI: CollabAPI | null;
   excalidrawAPI: ExcalidrawImperativeAPI;
 }): Promise<
-  { scene: ExcalidrawInitialDataState | null } & (
+  { scene: ExcalidrawInitialDataState | null; neonData?: any; slug?: string } & (
     | { isExternalScene: true; id: string; key: string }
     | { isExternalScene: false; id?: null; key?: null }
   )
@@ -251,6 +257,38 @@ const initializeScene = async (opts: {
     }),
     appState: restoreAppState(localDataState?.appState, null),
   };
+
+  // Check Neon database permanent slug from URL pathname (e.g. /new-workflow)
+  const urlSlug = getSlugFromPathname();
+  if (urlSlug && !clientSceneMatch && !jsonBackendMatch && !id) {
+    try {
+      const neonData = await fetchCanvasFromNeon(urlSlug);
+      if (neonData && neonData.latest) {
+        scene = {
+          elements: bumpElementVersions(
+            restoreElements(neonData.latest.elements, null, {
+              repairBindings: true,
+              deleteInvisibleElements: true,
+            }),
+            localDataState?.elements,
+          ),
+          appState: restoreAppState(
+            neonData.latest.app_state,
+            localDataState?.appState,
+          ),
+        };
+        scene.scrollToContent = true;
+        return {
+          scene,
+          isExternalScene: false,
+          neonData,
+          slug: urlSlug,
+        };
+      }
+    } catch (err) {
+      console.warn("Failed to load initial canvas from Neon:", err);
+    }
+  }
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
   const isExternalScene = !!(id || jsonBackendMatch || clientSceneMatch || roomLinkData);
@@ -400,6 +438,17 @@ const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isFooterOpen, setIsFooterOpen] = useState(false);
   const isCollabDisabled = isRunningInIframe();
+
+  const [currentSlug, setCurrentSlug] = useState<string | null>(() =>
+    getSlugFromPathname(),
+  );
+  const [versions, setVersions] = useState<CanvasVersionSummary[]>([]);
+  const [activeVersionNumber, setActiveVersionNumber] = useState<number | null>(
+    null,
+  );
+  const [notificationMessage, setNotificationMessage] = useState<string | null>(
+    null,
+  );
 
   const { editorTheme, appTheme, setAppTheme } = useHandleAppTheme();
 
@@ -585,9 +634,19 @@ const ExcalidrawWrapper = () => {
       return;
     }
 
-    initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
+    initializeScene({ collabAPI, excalidrawAPI }).then(async (data: any) => {
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
+      if (data.neonData) {
+        const nd = data.neonData;
+        setVersions(nd.versions || []);
+        if (nd.latest) {
+          setActiveVersionNumber(nd.latest.version_number);
+          setNotificationMessage(
+            `Loaded "/${data.slug}" (v${nd.latest.version_number}) with ${nd.versions.length} versions`,
+          );
+        }
+      }
     });
 
     const onHashChange = async (event: HashChangeEvent) => {
@@ -961,12 +1020,51 @@ const ExcalidrawWrapper = () => {
     },
   };
 
+  const handleSelectVersion = (versionData: any, versionNumber: number) => {
+    if (versionData && excalidrawAPI) {
+      excalidrawAPI.updateScene({
+        elements: restoreElements(versionData.elements, null, {
+          repairBindings: true,
+        }),
+        appState: restoreAppState(versionData.app_state, null),
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+      if (versionData.files) {
+        excalidrawAPI.addFiles(Object.values(versionData.files));
+      }
+    }
+    setActiveVersionNumber(versionNumber);
+  };
+
+  const handleResetCanvas = () => {
+    if (excalidrawAPI) {
+      excalidrawAPI.resetScene();
+    }
+    setCurrentSlug(null);
+    setVersions([]);
+    setActiveVersionNumber(null);
+    setNotificationMessage(null);
+  };
+
   return (
     <div className="fowzy-app-container">
       <Navigation
         onToggleFooter={() => setIsFooterOpen((prev) => !prev)}
         isFooterOpen={isFooterOpen}
-      />
+      >
+        <CloudVersionControl
+          excalidrawAPI={excalidrawAPI}
+          currentSlug={currentSlug}
+          onSlugChange={(newSlug) => setCurrentSlug(newSlug)}
+          versions={versions}
+          onVersionsUpdate={(newVersions) => setVersions(newVersions)}
+          activeVersionNumber={activeVersionNumber}
+          onSelectVersion={handleSelectVersion}
+          onResetCanvas={handleResetCanvas}
+          notificationMessage={notificationMessage}
+          onClearNotification={() => setNotificationMessage(null)}
+        />
+      </Navigation>
       <div
         className={clsx("excalidraw-app", "fowzy-canvas-wrapper", {
           "is-collaborating": isCollaborating,
