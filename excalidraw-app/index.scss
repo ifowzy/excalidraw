@@ -63,17 +63,18 @@ html.grayscale-mode,
   display: flex;
   flex-direction: column;
   width: 100vw;
+  width: 100dvw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: relative;
   background-color: var(--fowzy-bg);
 }
 
 .fowzy-navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
   z-index: 50;
   background-color: #ffffff;
   border-bottom: 3px solid #000000;
@@ -86,20 +87,27 @@ html.grayscale-mode,
   &__inner {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 0.5rem 0.85rem;
+    padding: 0.35rem 0.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.3rem;
 
     @media (min-width: 640px) {
-      padding: 0.75rem 1.75rem;
+      padding: 0.65rem 1.75rem;
+      gap: 1rem;
     }
   }
 
   &__brand-container {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    flex-shrink: 0;
+
+    @media (min-width: 640px) {
+      gap: 0.5rem;
+    }
   }
 
   &__brand {
@@ -107,16 +115,37 @@ html.grayscale-mode,
     color: #000000;
     display: inline-flex;
     align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+
+    @media (min-width: 640px) {
+      gap: 0.5rem;
+    }
+
+    &:hover {
+      .fowzy-navbar__logo {
+        transform: scale(1.05);
+      }
+      .fowzy-navbar__badge {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0px 0px #000000;
+      }
+    }
   }
 
   &__logo {
     font-family: var(--fowzy-font-display);
-    font-size: 1.25rem;
+    font-size: 1.05rem;
     font-weight: 900;
     letter-spacing: -0.02em;
     color: #000000;
     margin: 0;
+    white-space: nowrap;
     transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+
+    @media (min-width: 480px) {
+      font-size: 1.25rem;
+    }
 
     @media (min-width: 640px) {
       font-size: 1.5rem;
@@ -129,26 +158,133 @@ html.grayscale-mode,
 
   &__badge {
     display: inline-block;
-    padding: 0.15rem 0.45rem;
+    padding: 0.1rem 0.35rem;
     background-color: var(--fowzy-yellow);
     color: #000000;
     font-family: var(--fowzy-font-mono);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 800;
     border: 2px solid #000000;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     box-shadow: 2px 2px 0px 0px #000000;
+
+    @media (min-width: 640px) {
+      padding: 0.15rem 0.45rem;
+      font-size: 0.7rem;
+    }
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.35rem;
+    flex-shrink: 0;
 
     @media (min-width: 640px) {
       gap: 0.75rem;
     }
+
+    &-desktop {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+
+      @media (min-width: 768px) {
+        display: flex;
+        gap: 0.75rem;
+      }
+    }
+  }
+}
+
+.fowzy-mobile-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.5rem;
+  background-color: var(--fowzy-yellow);
+  box-shadow: 2px 2px 0px 0px #000000;
+
+  @media (min-width: 768px) {
+    display: none !important;
+  }
+
+  &.is-active {
+    background-color: #000000;
+    color: #ffffff;
+  }
+}
+
+.fowzy-mobile-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0.5rem;
+  background-color: #ffffff;
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px 0px #000000;
+  z-index: 200;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0;
+  animation: fowzy-dropdown-pop 0.15s cubic-bezier(0.2, 0, 0, 1);
+
+  @media (min-width: 768px) {
+    display: none !important;
+  }
+}
+
+@keyframes fowzy-dropdown-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fowzy-mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  border: none;
+  font-family: var(--fowzy-font-mono);
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: #000000;
+  text-decoration: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+  transition: background-color 0.1s ease;
+
+  &:hover,
+  &:active {
+    background-color: var(--fowzy-yellow);
+  }
+
+  .fowzy-mobile-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border: 1.5px solid #000000;
+    background-color: #f3f3f5;
+
+    &.is-active {
+      background-color: var(--fowzy-yellow);
+      font-weight: 800;
+    }
+  }
+
+  .fowzy-mobile-external {
+    margin-left: auto;
+    opacity: 0.5;
   }
 }
 
@@ -249,19 +385,12 @@ html.grayscale-mode,
 }
 
 .fowzy-canvas-wrapper {
-  position: absolute;
-  top: 54px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: calc(100vh - 54px);
+  flex: 1 1 0%;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
-
-  @media (min-width: 640px) {
-    top: 68px;
-    height: calc(100vh - 68px);
-  }
 }
 
 /* ==========================================================================
@@ -533,6 +662,60 @@ html.grayscale-mode,
     background-color: #ffffff !important;
   }
 
+  /* Exclude mobile shape actions container from forced borders/backgrounds */
+  .compact-shape-actions.mobile-shape-actions,
+  .mobile-shape-actions {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  /* Mobile App-top-bar (MainMenu trigger & Sidebar trigger) */
+  .App-top-bar {
+    .main-menu-trigger,
+    .sidebar-trigger,
+    .PenModeButton {
+      border: 2px solid #000000 !important;
+      border-radius: 0px !important;
+      box-shadow: 3px 3px 0px 0px #000000 !important;
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      transition: all 0.1s ease;
+
+      &:hover {
+        background-color: #f3f3f5 !important;
+        transform: translate(-1px, -1px);
+        box-shadow: 4px 4px 0px 0px #000000 !important;
+      }
+
+      &:active {
+        transform: translate(1px, 1px);
+        box-shadow: 1px 1px 0px 0px #000000 !important;
+      }
+    }
+  }
+
+  /* Mobile Sidebar (Library) Full-width cleanly on phone screens */
+  @media (max-width: 640px) {
+    .sidebar {
+      width: 100% !important;
+      max-width: 100vw !important;
+      border-left: none !important;
+      border-top: 3px solid #000000 !important;
+      z-index: 200 !important;
+    }
+
+    .App-bottom-bar {
+      margin-bottom: max(0.25rem, env(safe-area-inset-bottom)) !important;
+      padding: 0 0.5rem;
+
+      .App-toolbar {
+        max-width: calc(100vw - 1rem);
+        overflow-x: auto;
+      }
+    }
+  }
+
   .layer-ui__wrapper__top-right {
     border: none !important;
     background: transparent !important;
@@ -767,30 +950,53 @@ html.grayscale-mode,
 .fowzy-navbar__center {
   display: flex;
   align-items: center;
-  margin-left: 0.5rem;
+  margin-left: 0.25rem;
   margin-right: auto;
+  min-width: 0;
+
+  @media (min-width: 640px) {
+    margin-left: 0.5rem;
+  }
 }
 
 .fowzy-cloud-bar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
+
+  @media (min-width: 640px) {
+    gap: 0.4rem;
+  }
+
+  &__history-btn {
+    display: none;
+
+    @media (min-width: 640px) {
+      display: inline-flex;
+    }
+  }
 }
 
 .fowzy-cloud-slug-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.65rem;
+  gap: 0.25rem;
+  padding: 0.35rem 0.45rem;
   background-color: #ffffff;
   border: 2px solid #000000;
   font-family: var(--fowzy-font-mono);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.725rem;
   color: #000000;
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 2px 2px 0px 0px #000000;
+
+  @media (min-width: 640px) {
+    gap: 0.4rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+  }
 
   &:hover {
     transform: translate(-1px, -1px);
@@ -800,31 +1006,68 @@ html.grayscale-mode,
 
   .fowzy-cloud-icon {
     color: #2563eb;
+    flex-shrink: 0;
   }
 
   .fowzy-cloud-slug {
-    max-width: 140px;
+    max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 
+    @media (min-width: 480px) {
+      max-width: 140px;
+    }
+
     @media (min-width: 768px) {
       max-width: 220px;
+    }
+
+    &__full {
+      display: none;
+      @media (min-width: 480px) {
+        display: inline;
+      }
+    }
+
+    &__short {
+      display: inline;
+      @media (min-width: 480px) {
+        display: none;
+      }
     }
   }
 
   .fowzy-version-badge {
-    padding: 0.1rem 0.35rem;
+    padding: 0.1rem 0.25rem;
     background-color: var(--fowzy-yellow);
     border: 1px solid #000000;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 800;
+    flex-shrink: 0;
+
+    @media (min-width: 640px) {
+      padding: 0.1rem 0.35rem;
+      font-size: 0.7rem;
+    }
   }
 }
 
 .fowzy-nav-btn--save {
   background-color: #86efac;
   box-shadow: 2px 2px 0px 0px #000000;
+  padding: 0.35rem 0.5rem;
+
+  @media (max-width: 420px) {
+    padding: 0.35rem 0.4rem;
+    .fowzy-nav-btn__label {
+      display: none;
+    }
+  }
+
+  @media (min-width: 640px) {
+    padding: 0.45rem 0.65rem;
+  }
 
   &:hover {
     background-color: #4ade80;

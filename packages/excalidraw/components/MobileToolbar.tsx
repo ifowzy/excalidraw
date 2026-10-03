@@ -30,6 +30,7 @@ import {
   drawShapeToolIcon,
   bucketFillIcon,
   stickyNoteToolIcon,
+  MagicIcon,
 } from "./icons";
 
 import "./ToolIcon.scss";

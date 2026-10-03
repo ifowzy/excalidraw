@@ -23,7 +23,7 @@ apiRouter.get("/canvases", async (_req: Request, res: Response) => {
 // Get a canvas by slug with version list and latest data
 apiRouter.get("/canvases/:slug", async (req: Request, res: Response) => {
   try {
-    const slug = req.params.slug;
+    const slug = String(req.params.slug);
     const canvasData = await getCanvas(slug);
     if (!canvasData) {
       return res.status(404).json({ success: false, error: "Canvas not found" });
@@ -38,8 +38,8 @@ apiRouter.get("/canvases/:slug", async (req: Request, res: Response) => {
 // Get a specific version of a canvas
 apiRouter.get("/canvases/:slug/versions/:version", async (req: Request, res: Response) => {
   try {
-    const slug = req.params.slug;
-    const versionNumber = parseInt(req.params.version, 10);
+    const slug = String(req.params.slug);
+    const versionNumber = parseInt(String(req.params.version), 10);
     if (isNaN(versionNumber)) {
       return res.status(400).json({ success: false, error: "Invalid version number" });
     }
@@ -59,7 +59,7 @@ apiRouter.get("/canvases/:slug/versions/:version", async (req: Request, res: Res
 // Save a new version for a canvas slug
 apiRouter.post("/canvases/:slug", async (req: Request, res: Response) => {
   try {
-    const slug = req.params.slug;
+    const slug = String(req.params.slug);
     const { title, elements, appState, files, note } = req.body;
 
     if (!elements || !Array.isArray(elements)) {
@@ -85,7 +85,7 @@ apiRouter.post("/canvases/:slug", async (req: Request, res: Response) => {
 // Delete a canvas and all versions
 apiRouter.delete("/canvases/:slug", async (req: Request, res: Response) => {
   try {
-    const slug = req.params.slug;
+    const slug = String(req.params.slug);
     const result = await deleteCanvas(slug);
     res.json({ success: true, ...result });
   } catch (error: any) {

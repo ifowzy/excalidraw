@@ -18,6 +18,13 @@ export const AppMainMenu: React.FC<{
       <MainMenu.Separator />
       <MainMenu.DefaultItems.CommandPalette className="highlighted" />
       <MainMenu.DefaultItems.SearchMenu />
+      {props.isCollabEnabled && (
+        <MainMenu.DefaultItems.LiveCollaborationTrigger
+          onSelect={props.onCollabDialogOpen}
+          isCollaborating={props.isCollaborating}
+        />
+      )}
+      <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
       <MainMenu.DefaultItems.ToggleTheme allowSystemTheme theme={props.theme} />
       <MainMenu.DefaultItems.ChangeCanvasBackground />

@@ -254,7 +254,12 @@ export const CloudVersionControl: React.FC<CloudVersionControlProps> = ({
         >
           <Cloud size={16} className="fowzy-cloud-icon" />
           <span className="fowzy-cloud-slug">
-            {currentSlug ? `/${currentSlug}` : "Permanent Link..."}
+            <span className="fowzy-cloud-slug__full">
+              {currentSlug ? `/${currentSlug}` : "Permanent Link..."}
+            </span>
+            <span className="fowzy-cloud-slug__short">
+              {currentSlug ? `/${currentSlug}` : "Link"}
+            </span>
           </span>
           {versions.length > 0 && (
             <span className="fowzy-version-badge">
@@ -277,10 +282,10 @@ export const CloudVersionControl: React.FC<CloudVersionControlProps> = ({
           </span>
         </button>
 
-        {/* History Button */}
+        {/* History Button (Desktop & Tablet only) */}
         <button
           type="button"
-          className="fowzy-nav-btn fowzy-nav-btn--history"
+          className="fowzy-nav-btn fowzy-nav-btn--history fowzy-cloud-bar__history-btn"
           onClick={() => {
             setActiveTab("versions");
             setIsModalOpen(true);
